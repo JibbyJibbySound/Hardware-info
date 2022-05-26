@@ -1,3 +1,13 @@
+<# Hardware Info Script #>
+<#
+    Author: Gabriel Plume
+    Version: 0.1
+    Date uploaded: 26/05/2022
+    Change note:
+        Added description
+        Improved layout of Reconnect window
+#>
+
 $Cs=(Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name
 
 <# Main Menu Window #>
@@ -136,11 +146,18 @@ $DW = $MMWin.FindName("DW")
 [xml] $RForm = @"
     <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    Title="Connect" Height="125" Width="100" ResizeMode="NoResize">
-        <StackPanel>
-            <TextBox Name="Entry">Enter a machine name</TextBox>
-            <Button Name="Connect">Connect to machine</Button>
-        </StackPanel>
+    Title="Connect" Height="75" Width="150" ResizeMode="NoResize">
+        <Grid Height="75">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <TextBox Name="Entry" HorizontalAlignment="Center">Enter a machine name</TextBox>
+            <Button Name="Connect" HorizontalAlignment="Center" VerticalAlignment="Bottom">Connect to machine</Button>
+        </Grid>
     </Window>
 "@
 
