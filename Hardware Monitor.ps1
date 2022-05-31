@@ -8,6 +8,8 @@
 #>
 $Cs=(Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name
 
+$Cs=(Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name
+
 <# Main Menu Window #>
 
 [xml]$MenuForm = @"
@@ -148,7 +150,7 @@ $DW = $MMWin.FindName("DW")
 [xml]$CapForm = @"
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    Title="Storage Info" Height="150" Width="600" ResizeMode="NoResize">
+    Title="Storage Info" Height="150" Width="600">
     <ScrollViewer HorizontalScrollBarVisibility="Auto">  
         <Grid Name="CapGrid" Width="{Binding ElementName=Panel1, Path=ActualWidth}">
             <Grid.RowDefinitions>
@@ -339,19 +341,19 @@ $Storage.Add_Click({
         [System.Windows.Controls.Grid]::SetColumn($NameLabel,0)
         $CapGrid.AddChild($NameLabel)
 
-        $IDLabel = New-Object System.Windows.Controls.Label
-        $IDLabel.Name = "DiskID"
-        $IDLabel.Content = $d.BootPartition
-        [System.Windows.Controls.Grid]::SetRow($IDLabel,$Count)
-        [System.Windows.Controls.Grid]::SetColumn($IDLabel,1)
-        $CapGrid.AddChild($IDLabel)
+        $BootLabel = New-Object System.Windows.Controls.Label
+        $BootLabel.Name = "BootLabel"
+        $BootLabel.Content = $d.BootPartition
+        [System.Windows.Controls.Grid]::SetRow($BootLabel,$Count)
+        [System.Windows.Controls.Grid]::SetColumn($BootLabel,1)
+        $CapGrid.AddChild($BootLabel)
 
-        $PartLabel = New-Object System.Windows.Controls.Label
-        $PartLabel.Name = "Parts"
-        $PartLabel.Content = $d.PrimaryPartition
-        [System.Windows.Controls.Grid]::SetRow($PartLabel,$Count)
-        [System.Windows.Controls.Grid]::SetColumn($PartLabel,2)
-        $CapGrid.AddChild($PartLabel)
+        $PrimLabel = New-Object System.Windows.Controls.Label
+        $PrimLabel.Name = "PrimLabel"
+        $PrimLabel.Content = $d.PrimaryPartition
+        [System.Windows.Controls.Grid]::SetRow($PrimLabel,$Count)
+        [System.Windows.Controls.Grid]::SetColumn($PrimLabel,2)
+        $CapGrid.AddChild($PrimLabel)
 
         $CapLabel = New-Object System.Windows.Controls.Label
         $CapLabel.Name = "StorageCap"
