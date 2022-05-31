@@ -1,13 +1,11 @@
 <# Hardware Info Script #>
 <#
     Author: Gabriel Plume
-    Version: 0.1
-    Date uploaded: 26/05/2022
+    Version: 0.2
+    Date uploaded: 31/05/2022
     Change note:
-        Added description
-        Improved layout of Reconnect window
+        Added functionality to capacity button
 #>
-
 $Cs=(Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name
 
 <# Main Menu Window #>
@@ -15,14 +13,16 @@ $Cs=(Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name
 [xml]$MenuForm = @"
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    Title="Hardware Info" Height="500" Width="400" ResizeMode="NoResize">
+    Title="Hardware Info" Height="500" Width="300" ResizeMode="NoResize">
     <Canvas Name="Panel1">
-        <Label Name="ComputerConnected" Content="Connected to $Cs" Canvas.Left="10" Canvas.Top="5"/>
+        <Label Name="ComputerConnected" Content="Connected to $Cs" Canvas.Left="5" Canvas.Top="5"/>
         <Label Name="Auth" Content="By Gabriel Plume" Canvas.Bottom="5" Canvas.Right="10"/>
-        <Grid Width="{Binding ElementName=Panel1, Path=ActualWidth}" Canvas.Top="90">
+        <Button Name="Reconnect" Canvas.Bottom="8" Canvas.Left="10" HorizontalAlignment="Center">Connect to other</Button>
+        <Grid Width="{Binding ElementName=Panel1, Path=ActualWidth}" Canvas.Top="85">
             <Grid.RowDefinitions>
                 <RowDefinition/>
-                <RowDefinition Height="45"/>
+                <RowDefinition Height="35"/>
+                <RowDefinition Height="60"/>
                 <RowDefinition Height="60"/>
                 <RowDefinition Height="60"/>
                 <RowDefinition Height="60"/>
@@ -30,7 +30,8 @@ $Cs=(Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name
             <Label Name="Welcome" Content="Welcome" FontSize="30" HorizontalAlignment="Center" VerticalAlignment="Top"/>
             <Button Name="CPU" Grid.Row="2" Height="50" Width="150" HorizontalAlignment="Center">CPU Info</Button>
             <Button Name="Memory" Grid.Row="3" Height="50" Width="150" HorizontalAlignment="Center">Memory Info</Button>
-            <Button Name="Reconnect" Grid.Row="4" Height="50" Width="150" HorizontalAlignment="Center">Connect to other</Button>
+            <Button Name="Storage" Grid.Row="4" Height="50" Width="150" HorizontalAlignment="Center">Storage Info</Button>
+            <Button Grid.Row="5" Height="50" Width="150" HorizontalAlignment="Center">Test2</Button>
         </Grid>
     </Canvas>
 </Window>
@@ -41,6 +42,7 @@ $MenuWin=[Windows.Markup.XamlReader]::Load( $MenuNR )
 $Device = $MenuWin.FindName("ComputerConnected")
 $CPU = $MenuWin.FindName("CPU")
 $Memory = $MenuWin.FindName("Memory")
+$Storage = $MenuWin.FindName("Storage")
 $Reconnect = $MenuWin.FindName("Reconnect")
 
 <# CPU information window #>
@@ -141,6 +143,44 @@ $Cap = $MMWin.FindName("Cap")
 $Speed = $MMWin.FindName("Speed")
 $DW = $MMWin.FindName("DW")
 
+<# Capacity Info window #>
+
+[xml]$CapForm = @"
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    Title="Storage Info" Height="150" Width="600" ResizeMode="NoResize">
+    <ScrollViewer HorizontalScrollBarVisibility="Auto">  
+        <Grid Name="CapGrid" Width="{Binding ElementName=Panel1, Path=ActualWidth}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+        
+            <Label Grid.Column="0">Name</Label>
+            <Label Grid.Column="1">Device ID</Label>
+            <Label Grid.Column="2">Partitions</Label>
+            <Label Grid.Column="3">Capacity</Label>
+
+        </Grid>
+    </ScrollViewer>
+</Window>
+"@
+
+$CapNR=(New-Object System.Xml.XmlNodeReader $CapForm)
+$CapWin=[Windows.Markup.XamlReader]::Load( $CapNR )
+
+$CapWin.Add_Closing({$_.Cancel = $true
+                    $CapWin.Hide()})
+
+$CapGrid = $CapWin.FindName("CapGrid")
+
+# $CapGrid.ColumnDefinitions.Add()
+
 <# Connect window #>
 
 [xml] $RForm = @"
@@ -198,6 +238,132 @@ $Memory.Add_Click({
     $Speed.Content = $Data.Speed
     $DW.Content = $Data.DataWidth
     $MMWin.ShowDialog()
+})
+
+$Storage.Add_Click({
+    if($Cs -EQ (Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name){
+    $CapData = Get-CimInstance -ClassName CIM_DiskDrive
+    }else{
+    $CapData = Get-CimInstance -ClassName CIM_DiskDrive -ComputerName $Cs
+    }
+
+    $Count=1
+
+    foreach ($d in $CapData) {
+        $CapRow = new-object system.windows.controls.rowdefinition
+        $CapRow.Height="Auto"
+        $CapGrid.RowDefinitions.Add($CapRow)
+        
+        $NameLabel = New-Object System.Windows.Controls.Label
+        $NameLabel.Name = "Name"
+        $NameLabel.Content = $d.Caption
+        [System.Windows.Controls.Grid]::SetRow($NameLabel,$Count)
+        [System.Windows.Controls.Grid]::SetColumn($NameLabel,0)
+        $CapGrid.AddChild($NameLabel)
+
+        $IDLabel = New-Object System.Windows.Controls.Label
+        $IDLabel.Name = "DiskID"
+        $IDLabel.Content = $d.DeviceID
+        [System.Windows.Controls.Grid]::SetRow($IDLabel,$Count)
+        [System.Windows.Controls.Grid]::SetColumn($IDLabel,1)
+        $CapGrid.AddChild($IDLabel)
+
+        $PartLabel = New-Object System.Windows.Controls.Label
+        $PartLabel.Name = "Parts"
+        $PartLabel.Content = $d.Partitions
+        [System.Windows.Controls.Grid]::SetRow($PartLabel,$Count)
+        [System.Windows.Controls.Grid]::SetColumn($PartLabel,2)
+        $CapGrid.AddChild($PartLabel)
+
+        $CapLabel = New-Object System.Windows.Controls.Label
+        $CapLabel.Name = "StorageCap"
+        $CapLabel.Content = $d.Size
+        [System.Windows.Controls.Grid]::SetRow($CapLabel,$Count)
+        [System.Windows.Controls.Grid]::SetColumn($CapLabel,3)
+        $CapGrid.AddChild($CapLabel)
+
+        $Count++
+    }
+
+    if($Cs -EQ (Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name){
+    $CapData = Get-CimInstance -ClassName CIM_DiskPartition
+    }else{
+    $PartData = Get-CimInstance -ClassName CIM_DiskPartition -ComputerName $Cs
+    }
+
+    $GapRow = new-object system.windows.controls.rowdefinition
+    $GapRow.Height="20"
+    $CapGrid.RowDefinitions.Add($GapRow)
+
+    $Count++
+
+    $Row = new-object system.windows.controls.rowdefinition
+    $Row.Height="Auto"
+    $CapGrid.RowDefinitions.Add($Row)
+
+    $NameHeader = New-Object System.Windows.Controls.Label
+    $NameHeader.Content = "Name"
+    [System.Windows.Controls.Grid]::SetRow($NameHeader,$Count)
+    [System.Windows.Controls.Grid]::SetColumn($NameHeader,0)
+    $CapGrid.AddChild($NameHeader)
+
+    $BootHeader = New-Object System.Windows.Controls.Label
+    $BootHeader.Content = "Boot Partition"
+    [System.Windows.Controls.Grid]::SetRow($BootHeader,$Count)
+    [System.Windows.Controls.Grid]::SetColumn($BootHeader,1)
+    $CapGrid.AddChild($BootHeader)
+
+    $PartHeader = New-Object System.Windows.Controls.Label
+    $PartHeader.Content = "Primary Partition"
+    [System.Windows.Controls.Grid]::SetRow($PartHeader,$Count)
+    [System.Windows.Controls.Grid]::SetColumn($PartHeader,2)
+    $CapGrid.AddChild($PartHeader)
+
+    $CapHeader = New-Object System.Windows.Controls.Label
+    $CapHeader.Content = "Capacity"
+    [System.Windows.Controls.Grid]::SetRow($CapHeader,$Count)
+    [System.Windows.Controls.Grid]::SetColumn($CapHeader,3)
+    $CapGrid.AddChild($CapHeader)
+
+    $Count++
+
+    foreach ($d in $CapData) {
+        $PartRow = new-object system.windows.controls.rowdefinition
+        $PartRow.Height="Auto"
+        $CapGrid.RowDefinitions.Add($PartRow)
+        
+        $NameLabel = New-Object System.Windows.Controls.Label
+        $NameLabel.Name = "Name"
+        $NameLabel.Content = $d.Name
+        [System.Windows.Controls.Grid]::SetRow($NameLabel,$Count)
+        [System.Windows.Controls.Grid]::SetColumn($NameLabel,0)
+        $CapGrid.AddChild($NameLabel)
+
+        $IDLabel = New-Object System.Windows.Controls.Label
+        $IDLabel.Name = "DiskID"
+        $IDLabel.Content = $d.BootPartition
+        [System.Windows.Controls.Grid]::SetRow($IDLabel,$Count)
+        [System.Windows.Controls.Grid]::SetColumn($IDLabel,1)
+        $CapGrid.AddChild($IDLabel)
+
+        $PartLabel = New-Object System.Windows.Controls.Label
+        $PartLabel.Name = "Parts"
+        $PartLabel.Content = $d.PrimaryPartition
+        [System.Windows.Controls.Grid]::SetRow($PartLabel,$Count)
+        [System.Windows.Controls.Grid]::SetColumn($PartLabel,2)
+        $CapGrid.AddChild($PartLabel)
+
+        $CapLabel = New-Object System.Windows.Controls.Label
+        $CapLabel.Name = "StorageCap"
+        $CapLabel.Content = $d.Size
+        [System.Windows.Controls.Grid]::SetRow($CapLabel,$Count)
+        [System.Windows.Controls.Grid]::SetColumn($CapLabel,3)
+        $CapGrid.AddChild($CapLabel)
+
+        $Count++
+    }
+
+    $CapWin.ShowDialog()
 })
 
 $Reconnect.Add_Click({
