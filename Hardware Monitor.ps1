@@ -1,13 +1,10 @@
 <# Hardware Info Script #>
 <#
     Author: Gabriel Plume
-    Version: 0.3
+    Version: 0.3.1
     Date uploaded: 01/06/2022
     Change note:
-        Added functionality for Driver checking
-        Added functionality for Video Controller
-        Made memory info programatic
-        Fixed Memory headers
+        Bug fix
 #>
 
 $Cs=(Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name
@@ -405,7 +402,7 @@ $Storage.Add_Click({
     }
 
     if($Cs -EQ (Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name){
-    $CapData = Get-CimInstance -ClassName CIM_DiskPartition
+    $PartData = Get-CimInstance -ClassName CIM_DiskPartition
     }else{
     $PartData = Get-CimInstance -ClassName CIM_DiskPartition -ComputerName $Cs
     }
@@ -446,7 +443,7 @@ $Storage.Add_Click({
 
     $Count++
 
-    foreach ($d in $CapData) {
+    foreach ($d in $PartData) {
         $PartRow = new-object system.windows.controls.rowdefinition
         $PartRow.Height="Auto"
         $CapGrid.RowDefinitions.Add($PartRow)
