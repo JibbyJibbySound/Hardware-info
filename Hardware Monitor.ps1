@@ -1,13 +1,13 @@
 <# Hardware Info Script #>
 <#
     Author: Gabriel Plume
-    Version: 0.3.1
+    Version: 0.4
     Date uploaded: 01/06/2022
     Change note:
-        Bug fix
+        Bginning to add network capabilities
 #>
 
-$Cs=(Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name
+$ComputerConnected=(Get-WMIObject -ClassName Win32_ComputerSystem | Select-Object Name).Name
 
 <# Main Menu Window #>
 
@@ -16,7 +16,7 @@ $Cs=(Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     Title="Hardware Info" Height="500" Width="300" ResizeMode="NoResize">
     <Canvas Name="Panel1">
-        <Label Name="ComputerConnected" Content="Connected to $Cs" Canvas.Left="5" Canvas.Top="5"/>
+        <Label Name="ComputerConnected" Canvas.Left="5" Canvas.Top="5"/>
         <Label Name="Auth" Content="By Gabriel Plume" Canvas.Bottom="5" Canvas.Right="10"/>
         <Button Name="Reconnect" Canvas.Bottom="8" Canvas.Left="10" HorizontalAlignment="Center">Connect to other</Button>
         <Grid Width="{Binding ElementName=Panel1, Path=ActualWidth}" Canvas.Top="35">
@@ -44,6 +44,7 @@ $MenuNR=(New-Object System.Xml.XmlNodeReader $MenuForm)
 $MenuWin=[Windows.Markup.XamlReader]::Load( $MenuNR )
 
 $Device = $MenuWin.FindName("ComputerConnected")
+$Device.Content = "Connected to $ComputerConnected"
 $CPU = $MenuWin.FindName("CPU")
 $Memory = $MenuWin.FindName("Memory")
 $Storage = $MenuWin.FindName("Storage")
@@ -90,7 +91,8 @@ $CPUNR=(New-Object System.Xml.XmlNodeReader $CPUForm)
 $CPUWin=[Windows.Markup.XamlReader]::Load( $CPUNR )
 
 $CPUWin.Add_Closing({$_.Cancel = $true
-                    $CPUWin.Hide()})
+                    $CPUWin.Hide()
+                    $MenuWin.ShowDialog()})
 
 $DID = $CPUWin.FindName("DID") 
 $Name = $CPUWin.FindName("Name")
@@ -103,28 +105,30 @@ $Man = $CPUWin.FindName("Man")
 [xml]$MMForm = @"
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    Title="Main Memory Info" Height="100" Width="800" ResizeMode="NoResize">
-    <Grid Name="MMGrid" Width="{Binding ElementName=Panel1, Path=ActualWidth}">
-        <Grid.RowDefinitions>
-            <RowDefinition/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition  Width="150"/>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
+    Title="Main Memory Info" Height="100" Width="800">
+    <ScrollViewer HorizontalScrollBarVisibility="Auto">
+        <Grid Name="MMGrid" Width="{Binding ElementName=Panel1, Path=ActualWidth}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition  Width="150"/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
         
-        <Label Grid.Column="0">Part Number</Label>
-        <Label Grid.Column="1">Manufacturer</Label>
-        <Label Grid.Column="2">Location</Label>
-        <Label Grid.Column="3">Capacity</Label>
-        <Label Grid.Column="4">Speed</Label>
-        <Label Grid.Column="5">Data Width</Label>
+            <Label Grid.Column="0">Part Number</Label>
+            <Label Grid.Column="1">Manufacturer</Label>
+            <Label Grid.Column="2">Location</Label>
+            <Label Grid.Column="3">Capacity</Label>
+            <Label Grid.Column="4">Speed</Label>
+            <Label Grid.Column="5">Data Width</Label>
 
-    </Grid>
+        </Grid>
+        </ScrollViewer>
 </Window>
 "@
 
@@ -134,7 +138,8 @@ $MMWin=[Windows.Markup.XamlReader]::Load( $MMNR )
 $MMGrid = $MMWin.FindName("MMGrid")
 
 $MMWin.Add_Closing({$_.Cancel = $true
-                    $MMWin.Hide()})
+                    $MMWin.Hide()
+                    $MenuWin.ShowDialog()})
 
 <# Capacity Info window #>
 
@@ -168,7 +173,8 @@ $CapNR=(New-Object System.Xml.XmlNodeReader $CapForm)
 $CapWin=[Windows.Markup.XamlReader]::Load( $CapNR )
 
 $CapWin.Add_Closing({$_.Cancel = $true
-                    $CapWin.Hide()})
+                    $CapWin.Hide()
+                    $MenuWin.ShowDialog()})
 
 $CapGrid = $CapWin.FindName("CapGrid")
 
@@ -206,7 +212,8 @@ $VidNR=(New-Object System.Xml.XmlNodeReader $VidForm)
 $VidWin=[Windows.Markup.XamlReader]::Load( $VidNR )
 
 $VidWin.Add_Closing({$_.Cancel = $true
-                    $VidWin.Hide()})
+                    $VidWin.Hide()
+                    $MenuWin.ShowDialog()})
 
 $VidGrid = $VidWin.FindName("VidGrid")
 
@@ -246,7 +253,8 @@ $DivNR=(New-Object System.Xml.XmlNodeReader $DivForm)
 $DivWin=[Windows.Markup.XamlReader]::Load( $DivNR )
 
 $DivWin.Add_Closing({$_.Cancel = $true
-                    $DivWin.Hide()})
+                    $DivWin.Hide()
+                    $MenuWin.ShowDialog()})
 
 $DivGrid = $DivWin.FindName("DivGrid")
 
@@ -278,27 +286,37 @@ $RWin.Add_Closing({$_.Cancel = $true})
 $NewMachine = $RWin.FindName("Entry")
 $ConBut = $RWin.FindName("Connect")
 
+<# Reconnect functions #>
+
+$ConBut.Add_Click({
+    $ComputerConnected = $NewMachine.Text
+    $Device.Content = "Connected to $ComputerConnected"
+    $RWin.Hide()
+    $MenuWin.ShowDialog()
+})
+
 <# Main Menu functions #>
 
 $CPU.Add_Click({
-    if($Cs -EQ (Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name){
-    $Data = Get-CimInstance -ClassName CIM_processor
+    if($ComputerConnected -EQ (Get-WMIObject -ClassName Win32_ComputerSystem | Select-Object Name).Name){
+    $Data = Get-WMIObject -ClassName Win32_processor
     }else{
-    $Data = Get-CimInstance -ClassName CIM_processor -ComputerName $Cs
+    $Data = Get-WMIObject -ClassName Win32_processor -ComputerName $ComputerConnected
     }
     $DID.Content = $Data.DeviceID
     $Name.Content = $Data.Name
     $MCS.Content = $Data.MaxClockSpeed
     $Socket.Content = $Data.SocketDesignation
     $Man.Content = $Data.Manufacturer
+    $MenuWin.Hide()
     $CPUWin.Showdialog()
 })
 
 $Memory.Add_Click({
-    if($Cs -EQ (Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name){
-    $Data = Get-CimInstance -ClassName CIM_PhysicalMemory
+    if($ComputerConnected -EQ (Get-WMIObject -ClassName Win32_ComputerSystem | Select-Object Name).Name){
+    $Data = Get-WMIObject -ClassName Win32_PhysicalMemory
     }else{
-    $Data = Get-CimInstance -ClassName CIM_PhysicalMemory -ComputerName $Cs
+    $Data = Get-WMIObject -ClassName Win32_PhysicalMemory -ComputerName $ComputerConnected
     }
     
     $Count=1
@@ -313,6 +331,7 @@ $Memory.Add_Click({
         $PN.Content = $d.PartNumber
         [System.Windows.Controls.Grid]::SetRow($PN,$Count)
         [System.Windows.Controls.Grid]::SetColumn($PN,0)
+        $MMGrid.ClearValue()
         $MMGrid.AddChild($PN)
 
         $Manu = New-Object System.Windows.Controls.Label
@@ -353,14 +372,15 @@ $Memory.Add_Click({
         $Count++
     }
 
+    $MenuWin.Hide()
     $MMWin.ShowDialog()
 })
 
 $Storage.Add_Click({
-    if($Cs -EQ (Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name){
-    $CapData = Get-CimInstance -ClassName CIM_DiskDrive
+    if($ComputerConnected -EQ (Get-WMIObject -ClassName Win32_ComputerSystem | Select-Object Name).Name){
+    $CapData = Get-WMIObject -ClassName Win32_DiskDrive
     }else{
-    $CapData = Get-CimInstance -ClassName CIM_DiskDrive -ComputerName $Cs
+    $CapData = Get-WMIObject -ClassName Win32_DiskDrive -ComputerName $ComputerConnected
     }
 
     $Count=1
@@ -401,10 +421,10 @@ $Storage.Add_Click({
         $Count++
     }
 
-    if($Cs -EQ (Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name){
-    $PartData = Get-CimInstance -ClassName CIM_DiskPartition
+    if($ComputerConnected -EQ (Get-WMIObject -ClassName Win32_ComputerSystem | Select-Object Name).Name){
+    $CapData = Get-WMIObject -ClassName Win32_DiskPartition
     }else{
-    $PartData = Get-CimInstance -ClassName CIM_DiskPartition -ComputerName $Cs
+    $PartData = Get-WMIObject -ClassName Win32_DiskPartition -ComputerName $ComputerConnected
     }
 
     $GapRow = new-object system.windows.controls.rowdefinition
@@ -443,7 +463,7 @@ $Storage.Add_Click({
 
     $Count++
 
-    foreach ($d in $PartData) {
+    foreach ($d in $CapData) {
         $PartRow = new-object system.windows.controls.rowdefinition
         $PartRow.Height="Auto"
         $CapGrid.RowDefinitions.Add($PartRow)
@@ -479,14 +499,15 @@ $Storage.Add_Click({
         $Count++
     }
 
+    $MenuWin.Hide()
     $CapWin.ShowDialog()
 })
 
 $Video.Add_Click({
-    if($Cs -EQ (Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name){
-    $Data = Get-CimInstance -ClassName CIM_VideoController | Select-Object -Property Caption,AdapterCompatibility,VideoModeDescription,MaxRefreshRate,VideoProcessor
+    if($ComputerConnected -EQ (Get-WMIObject -ClassName Win32_ComputerSystem | Select-Object Name).Name){
+    $Data = Get-WMIObject -ClassName Win32_VideoController | Select-Object -Property Caption,AdapterCompatibility,VideoModeDescription,MaxRefreshRate,VideoProcessor
     }else{
-    $Data = Get-CimInstance -ClassName CIM_VideoController | Select-Object -Property Caption,AdapterCompatibility,VideoModeDescription,MaxRefreshRate,VideoProcessor -ComputerName $Cs
+    $Data = Get-WMIObject -ClassName Win32_VideoController -ComputerName $ComputerConnected| Select-Object -Property Caption,AdapterCompatibility,VideoModeDescription,MaxRefreshRate,VideoProcessor
     }
 
     $Count=1
@@ -534,14 +555,15 @@ $Video.Add_Click({
         $Count++
     }
 
+    $MenuWin.Hide()
     $VidWin.ShowDialog()
 })
 
 $Drivers.Add_Click({
-    if($Cs -EQ (Get-CimInstance -ClassName CIM_ComputerSystem | Select-Object Name).Name){
+    if($ComputerConnected -EQ (Get-WMIObject -ClassName Win32_ComputerSystem | Select-Object Name).Name){
     $Data = Get-WindowsDriver -Online |Sort-Object -Property ClassName |Select-Object -Property OriginalFileName,ClassName,BootCritical,ProviderName,Date,Version
     }else{
-    $Data = Get-WindowsDriver -Online |Sort-Object -Property ClassName |Select-Object -Property OriginalFileName,ClassName,BootCritical,ProviderName,Date,Version -ComputerName $Cs
+    $Data = Get-WindowsDriver -Online |Sort-Object -Property ClassName |Select-Object -Property OriginalFileName,ClassName,BootCritical,ProviderName,Date,Version
     }
 
     $Count=1
@@ -596,19 +618,13 @@ $Drivers.Add_Click({
         $Count++
     }
 
+    $MenuWin.Hide()
     $DivWin.ShowDialog()
 })
 
 $Reconnect.Add_Click({
+    $MenuWin.Hide()
     $RWin.Showdialog()
-})
-
-<# Reconnect functions #>
-
-$ConBut.Add_Click({
-    $Cs = $NewMachine.Text({})
-    $Device.Content({"Connected to $Cs"})
-    $RWin.Hide()
 })
 
 $MenuWin.Showdialog()
