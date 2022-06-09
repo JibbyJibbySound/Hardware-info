@@ -1,10 +1,10 @@
 <# Hardware Info Script #>
 <#
     Author: Gabriel Plume
-    Version: 0.4
-    Date uploaded: 08/06/2022
+    Version: 0.4.1
+    Date uploaded: 09/06/2022
     Change note:
-        Bginning to add network capabilities
+        Trying to fix Grid overwrite bug
 #>
 
 $ComputerConnected=(Get-WMIObject -ClassName Win32_ComputerSystem | Select-Object Name).Name
@@ -289,10 +289,18 @@ $ConBut = $RWin.FindName("Connect")
 <# Reconnect functions #>
 
 $ConBut.Add_Click({
-    $ComputerConnected = $NewMachine.Text
-    $Device.Content = "Connected to $ComputerConnected"
-    $RWin.Hide()
-    $MenuWin.ShowDialog()
+    try {
+        $ComputerConnected = $NewMachine.Text
+        Get-WMIObject -ClassName Win32_ComputerSystem -ComputerName $ComputerConnected -ErrorAction Stop| Select-Object Name 
+    }
+    catch {
+        $ComputerConnected = (Get-WMIObject -ClassName Win32_ComputerSystem | Select-Object Name).Name
+    }
+    finally{
+        $Device.Content = "Connected to $ComputerConnected"
+        $RWin.Hide()
+        $MenuWin.ShowDialog()
+    }
 })
 
 <# Main Menu functions #>
@@ -318,62 +326,74 @@ $Memory.Add_Click({
     }else{
     $Data = Get-WMIObject -ClassName Win32_PhysicalMemory -ComputerName $ComputerConnected
     }
-    
-    $Count=1
 
-    foreach ($d in $Data) {
-        $MMRow = new-object system.windows.controls.rowdefinition
-        $MMRow.Height="Auto"
-        $MMGrid.RowDefinitions.Add($MMRow)
+    $MMGridRowCount = $MMGrid.RowDefinitions | measure
+    try{
+        for ($MMGridRowCount.Count-1){
+            $PN.Content = ""
+            $Manu.Content = ""
+            $Location.Content = ""
+            $Cap.Content = ""
+            $Speed.Content = ""
+            $DW.Content = ""
+        }
+    }Finally{
+
+        $Count=1
+
+        foreach ($d in $Data) {
+            $MMRow = new-object system.windows.controls.rowdefinition
+            $MMRow.Height="Auto"
+            $MMGrid.RowDefinitions.Add($MMRow)
         
-        $PN = New-Object System.Windows.Controls.Label
-        $PN.Name = "PartNumber"
-        $PN.Content = $d.PartNumber
-        [System.Windows.Controls.Grid]::SetRow($PN,$Count)
-        [System.Windows.Controls.Grid]::SetColumn($PN,0)
-        $MMGrid.ClearValue()
-        $MMGrid.AddChild($PN)
+            $PN = New-Object System.Windows.Controls.Label
+            $PN.Name = "PartNumber"
+            $PN.Content = $d.PartNumber
+            [System.Windows.Controls.Grid]::SetRow($PN,$Count)
+            [System.Windows.Controls.Grid]::SetColumn($PN,0)
+            $MMGrid.AddChild($PN)
 
-        $Manu = New-Object System.Windows.Controls.Label
-        $Manu.Name = "Manufacturer"
-        $Manu.Content = $d.Manufacturer
-        [System.Windows.Controls.Grid]::SetRow($Manu,$Count)
-        [System.Windows.Controls.Grid]::SetColumn($Manu,1)
-        $MMGrid.AddChild($Manu)
+            $Manu = New-Object System.Windows.Controls.Label
+            $Manu.Name = "Manufacturer"
+            $Manu.Content = $d.Manufacturer
+            [System.Windows.Controls.Grid]::SetRow($Manu,$Count)
+            [System.Windows.Controls.Grid]::SetColumn($Manu,1)
+            $MMGrid.AddChild($Manu)
 
-        $Location = New-Object System.Windows.Controls.Label
-        $Location.Name = "DeviceLocator"
-        $Location.Content = $d.DeviceLocator
-        [System.Windows.Controls.Grid]::SetRow($Location,$Count)
-        [System.Windows.Controls.Grid]::SetColumn($Location,2)
-        $MMGrid.AddChild($Location)
+            $Location = New-Object System.Windows.Controls.Label
+            $Location.Name = "DeviceLocator"
+            $Location.Content = $d.DeviceLocator
+            [System.Windows.Controls.Grid]::SetRow($Location,$Count)
+            [System.Windows.Controls.Grid]::SetColumn($Location,2)
+            $MMGrid.AddChild($Location)
 
-        $Cap = New-Object System.Windows.Controls.Label
-        $Cap.Name = "Capacity"
-        $Cap.Content = $d.Capacity
-        [System.Windows.Controls.Grid]::SetRow($Cap,$Count)
-        [System.Windows.Controls.Grid]::SetColumn($Cap,3)
-        $MMGrid.AddChild($Cap)
+            $Cap = New-Object System.Windows.Controls.Label
+            $Cap.Name = "Capacity"
+            $Cap.Content = $d.Capacity
+            [System.Windows.Controls.Grid]::SetRow($Cap,$Count)
+            [System.Windows.Controls.Grid]::SetColumn($Cap,3)
+            $MMGrid.AddChild($Cap)
 
-        $Speed = New-Object System.Windows.Controls.Label
-        $Speed.Name = "Speed"
-        $Speed.Content = $d.Speed
-        [System.Windows.Controls.Grid]::SetRow($Speed,$Count)
-        [System.Windows.Controls.Grid]::SetColumn($Speed,4)
-        $MMGrid.AddChild($Speed)
+            $Speed = New-Object System.Windows.Controls.Label
+            $Speed.Name = "Speed"
+            $Speed.Content = $d.Speed
+            [System.Windows.Controls.Grid]::SetRow($Speed,$Count)
+            [System.Windows.Controls.Grid]::SetColumn($Speed,4)
+            $MMGrid.AddChild($Speed)
 
-        $DW = New-Object System.Windows.Controls.Label
-        $DW.Name = "DataWidth"
-        $DW.Content = $d.DataWidth
-        [System.Windows.Controls.Grid]::SetRow($DW,$Count)
-        [System.Windows.Controls.Grid]::SetColumn($DW,5)
-        $MMGrid.AddChild($DW)
+            $DW = New-Object System.Windows.Controls.Label
+            $DW.Name = "DataWidth"
+            $DW.Content = $d.DataWidth
+            [System.Windows.Controls.Grid]::SetRow($DW,$Count)
+            [System.Windows.Controls.Grid]::SetColumn($DW,5)
+            $MMGrid.AddChild($DW)
 
-        $Count++
+            $Count++
+        }
+
+        $MenuWin.Hide()
+        $MMWin.ShowDialog()
     }
-
-    $MenuWin.Hide()
-    $MMWin.ShowDialog()
 })
 
 $Storage.Add_Click({
@@ -384,6 +404,7 @@ $Storage.Add_Click({
     }
 
     $Count=1
+
 
     foreach ($d in $CapData) {
         $CapRow = new-object system.windows.controls.rowdefinition
